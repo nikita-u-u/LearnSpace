@@ -36,18 +36,24 @@ export default function LearnSpace({
   onNotice,
   checkoutSlot = null,
 }) {
-  const [view, setView] = useState("catalog");
+  const getInitialParam = (key, defaultVal) => {
+    if (typeof window === "undefined") return defaultVal;
+    const val = new URLSearchParams(window.location.search).get(key);
+    return val !== null ? val : defaultVal;
+  };
+
+  const [view, setView] = useState(() => getInitialParam("view", "catalog"));
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef(null);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All");
-  const [price, setPrice] = useState("all");
-  const [level, setLevel] = useState("all");
-  const [sort, setSort] = useState("recommended");
+  const [query, setQuery] = useState(() => getInitialParam("q", ""));
+  const [category, setCategory] = useState(() => getInitialParam("category", "All"));
+  const [price, setPrice] = useState(() => getInitialParam("price", "all"));
+  const [level, setLevel] = useState(() => getInitialParam("level", "all"));
+  const [sort, setSort] = useState(() => getInitialParam("sort", "recommended"));
   
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [selectedLesson, setSelectedLesson] = useState(0);
+  const [selectedCourse, setSelectedCourse] = useState(() => getInitialParam("course", null));
+  const [selectedLesson, setSelectedLesson] = useState(() => parseInt(getInitialParam("lesson", "0")) || 0);
   const [playback, setPlayback] = useState({ status: "idle", url: "" });
   
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -56,10 +62,65 @@ export default function LearnSpace({
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => parseInt(getInitialParam("p", "1")) || 1);
   const [totalCount, setTotalCount] = useState(0);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [stats, setStats] = useState(null);
+  const isPopStateEvent = useRef(false);
+
+  // Sync state with URL
+  useEffect(() => {
+    const handlePopState = () => {
+      isPopStateEvent.current = true;
+      const params = new URLSearchParams(window.location.search);
+      setView(params.get("view") || "catalog");
+      setQuery(params.get("q") || "");
+      setCategory(params.get("category") || "All");
+      setPrice(params.get("price") || "all");
+      setLevel(params.get("level") || "all");
+      setSort(params.get("sort") || "recommended");
+      setPage(parseInt(params.get("p")) || 1);
+      setSelectedCourse(params.get("course") || null);
+      setSelectedLesson(parseInt(params.get("lesson")) || 0);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (isPopStateEvent.current) {
+      isPopStateEvent.current = false;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const currentParams = params.toString();
+    
+    const newParams = new URLSearchParams();
+    if (view !== "catalog") newParams.set("view", view);
+    if (query) newParams.set("q", query);
+    if (category !== "All") newParams.set("category", category);
+    if (price !== "all") newParams.set("price", price);
+    if (level !== "all") newParams.set("level", level);
+    if (sort !== "recommended") newParams.set("sort", sort);
+    if (page > 1) newParams.set("p", page);
+    if (selectedCourse) newParams.set("course", selectedCourse);
+    if (selectedLesson > 0) newParams.set("lesson", selectedLesson);
+
+    const newQueryString = newParams.toString();
+    if (currentParams !== newQueryString) {
+      const url = newQueryString ? `?${newQueryString}` : window.location.pathname;
+      const wasSignificant = 
+        params.get("view") !== newParams.get("view") || 
+        params.get("course") !== newParams.get("course") ||
+        params.get("p") !== newParams.get("p");
+      
+      if (wasSignificant) {
+        window.history.pushState(null, "", url);
+      } else {
+        window.history.replaceState(null, "", url);
+      }
+    }
+  }, [view, query, category, price, level, sort, page, selectedCourse, selectedLesson]);
 
   // Debounce only the search text. Filters apply immediately.
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -72,6 +133,7 @@ export default function LearnSpace({
   // Note: results are intentionally NOT cleared here, so the grid keeps
   // showing the previous page instead of flashing an empty state.
   useEffect(() => {
+    if (isPopStateEvent.current) return;
     setPage(1);
   }, [category, level, price, sort, debouncedQuery]);
 
