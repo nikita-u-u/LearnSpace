@@ -31,7 +31,12 @@ function fromAddress() {
   return process.env.MAIL_FROM || 'LearnSpace <no-reply@learnspace.dev>';
 }
 
-export async function sendMail({ to, subject, text, html }) {
+/** Where account-deletion requests are sent. */
+export function adminEmail() {
+  return process.env.ADMIN_EMAIL || 'nikitakashyap013@gmail.com';
+}
+
+export async function sendMail({ to, subject, text, html, replyTo }) {
   const tx = getTransporter();
 
   if (!tx) {
@@ -45,47 +50,73 @@ export async function sendMail({ to, subject, text, html }) {
     return { delivered: false, reason: 'smtp_not_configured' };
   }
 
-  await tx.sendMail({ from: fromAddress(), to, subject, text, html });
+  await tx.sendMail({
+    from: fromAddress(),
+    to,
+    subject,
+    text,
+    html,
+    // Lets the owner reply straight to the learner.
+    ...(replyTo ? { replyTo } : {}),
+  });
   return { delivered: true };
 }
 
-export function deletionEmail({ name, confirmUrl, expiresMinutes }) {
-  const subject = 'Confirm your LearnSpace account deletion';
+/** Escape user-supplied text before putting it in an HTML email body. */
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-  const text = [
-    `Hi ${name},`,
+/**
+ * Notification sent to the site owner when a learner asks for their account to
+ * be deleted. Deletion is then performed manually.
+ */
+export function deletionRequestEmail({ name, email, userId, enrollments, reason, requestedAt }) {
+  const subject = `Account deletion request: ${email}`;
+
+  const lines = [
+    'A LearnSpace user has requested account deletion.',
     '',
-    'We received a request to permanently delete your LearnSpace account.',
+    `Name:        ${name}`,
+    `Email:       ${email}`,
+    `User ID:     ${userId}`,
+    `Enrollments: ${enrollments}`,
+    `Requested:   ${requestedAt}`,
+  ];
+
+  if (reason) {
+    lines.push('', 'Reason given:', reason);
+  }
+
+  lines.push(
     '',
-    'Confirm here (the link expires in ' + expiresMinutes + ' minutes):',
-    confirmUrl,
-    '',
-    'This removes your profile, enrollments and course progress. Purchase',
-    'records are retained only as long as tax rules require.',
-    '',
-    'If you did not request this, ignore this email and nothing will happen.',
+    'To action this, delete the user document and their enrollment and',
+    'progress records. Reply to this email to reach the user directly.',
     '',
     '— LearnSpace',
-  ].join('\n');
+  );
+
+  const text = lines.join('\n');
 
   const html = `
-    <div style="font-family:Inter,Segoe UI,sans-serif;max-width:520px;color:#20293c">
-      <h2 style="letter-spacing:-0.02em">Confirm account deletion</h2>
-      <p>Hi ${name},</p>
-      <p>We received a request to permanently delete your LearnSpace account.</p>
-      <p style="margin:28px 0">
-        <a href="${confirmUrl}"
-           style="background:#2f5bd7;color:#fff;padding:13px 22px;border-radius:10px;
-                  text-decoration:none;font-weight:700;display:inline-block">
-          Delete my account
-        </a>
-      </p>
-      <p style="color:#5a6478;font-size:14px">
-        This link expires in ${expiresMinutes} minutes. Deleting removes your profile,
-        enrollments and course progress.
-      </p>
-      <p style="color:#5a6478;font-size:14px">
-        If you did not request this, ignore this email and nothing will happen.
+    <div style="font-family:Inter,Segoe UI,sans-serif;max-width:560px;color:#20293c">
+      <h2 style="letter-spacing:-0.02em;margin:0 0 6px">Account deletion request</h2>
+      <p style="color:#5a6478;margin:0 0 20px">A LearnSpace user asked for their account to be deleted.</p>
+      <table style="border-collapse:collapse;font-size:14px;width:100%">
+        <tr><td style="padding:7px 0;color:#5a6478;width:120px">Name</td><td style="padding:7px 0"><strong>${escapeHtml(name)}</strong></td></tr>
+        <tr><td style="padding:7px 0;color:#5a6478">Email</td><td style="padding:7px 0"><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></td></tr>
+        <tr><td style="padding:7px 0;color:#5a6478">User ID</td><td style="padding:7px 0"><code>${escapeHtml(userId)}</code></td></tr>
+        <tr><td style="padding:7px 0;color:#5a6478">Enrollments</td><td style="padding:7px 0">${escapeHtml(enrollments)}</td></tr>
+        <tr><td style="padding:7px 0;color:#5a6478">Requested</td><td style="padding:7px 0">${escapeHtml(requestedAt)}</td></tr>
+        ${reason ? `<tr><td style="padding:7px 0;color:#5a6478;vertical-align:top">Reason</td><td style="padding:7px 0">${escapeHtml(reason)}</td></tr>` : ''}
+      </table>
+      <p style="color:#5a6478;font-size:13px;margin-top:22px;padding-top:16px;border-top:1px solid #e3e7f0">
+        Reply to this email to reach the user directly.
       </p>
     </div>
   `;

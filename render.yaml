@@ -52,3 +52,6 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      # Account deletion requests are forwarded to this address.
+      - key: ADMIN_EMAIL
+        value: nikitakashyap013@gmail.com

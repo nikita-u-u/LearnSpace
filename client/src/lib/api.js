@@ -100,10 +100,12 @@ export const api = {
   // Account settings
   updateProfile: (body) => request('/account/profile', { method: 'PATCH', body, auth: true }),
   shuffleAvatar: () => request('/account/avatar/shuffle', { method: 'POST', body: {}, auth: true }),
-  requestDeletion: () =>
-    request('/account/deletion-request', { method: 'POST', body: {}, auth: true }),
-  confirmDeletion: (token) =>
-    request('/account/deletion-confirm', { method: 'POST', body: { token } }),
+  requestDeletion: (reason) =>
+    request('/account/deletion-request', {
+      method: 'POST',
+      body: { reason },
+      auth: true,
+    }),
 };
 
 /** ₹1,299 from 129900 paise. */

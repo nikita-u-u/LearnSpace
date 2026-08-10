@@ -1,13 +1,12 @@
-import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 
 /**
- * Account deletion is a two-step flow: request, then confirm via a link
- * emailed to the account address. That way a hijacked session alone cannot
- * destroy an account, and the person must still control the inbox.
+ * A record that a user asked for their account to be deleted.
  *
- * Only a SHA-256 hash of the token is stored. A leaked database dump therefore
- * does not let anyone confirm a pending deletion.
+ * Deletion is handled manually by the site owner: the request is emailed to
+ * ADMIN_EMAIL and actioned by hand. This collection exists so requests are not
+ * lost if email delivery fails, and so repeat clicks can be rate limited
+ * instead of sending the owner one email per click.
  */
 const deletionRequestSchema = new mongoose.Schema({
   userId: {
@@ -20,33 +19,28 @@ const deletionRequestSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  tokenHash: {
+  name: {
     type: String,
-    required: true,
+  },
+  /** Free-text reason, if the user chose to give one. */
+  reason: {
+    type: String,
+    maxlength: 500,
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'cancelled'],
+    default: 'pending',
     index: true,
   },
-  expiresAt: {
-    type: Date,
-    required: true,
-  },
-  usedAt: {
-    type: Date,
+  /** Whether the notification email actually reached the owner. */
+  notified: {
+    type: Boolean,
+    default: false,
   },
 }, {
   timestamps: true,
 });
-
-// Mongo removes the document automatically once it expires.
-deletionRequestSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
-export function hashToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
-}
-
-export function createDeletionToken() {
-  const token = crypto.randomBytes(32).toString('hex');
-  return { token, tokenHash: hashToken(token) };
-}
 
 export const DeletionRequest =
   mongoose.models.DeletionRequest || mongoose.model('DeletionRequest', deletionRequestSchema);

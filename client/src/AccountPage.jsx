@@ -12,6 +12,7 @@ export default function AccountPage({ user, onUserUpdate, onLogout, summary }) {
   const [deleteStage, setDeleteStage] = useState('idle'); // idle | confirm | sent
   const [deleteMessage, setDeleteMessage] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
 
   const nameChanged = name.trim() !== user.name && name.trim().length >= 2;
 
@@ -48,13 +49,13 @@ export default function AccountPage({ user, onUserUpdate, onLogout, summary }) {
     setDeleting(true);
     setDeleteMessage(null);
     try {
-      const data = await api.requestDeletion();
+      const data = await api.requestDeletion(deleteReason.trim() || undefined);
       setDeleteStage('sent');
       setDeleteMessage({
-        kind: data.emailConfigured ? 'success' : 'warn',
-        text: data.emailConfigured
+        kind: data.emailDelivered ? 'success' : 'warn',
+        text: data.emailDelivered
           ? data.message
-          : `${data.message} Email delivery is not configured on this server, so the link was written to the server log instead.`,
+          : `${data.message} (Email delivery is not configured on this server, so the request was recorded and written to the server log.)`,
       });
     } catch (err) {
       setDeleteMessage({ kind: 'error', text: err.message });
@@ -187,8 +188,9 @@ export default function AccountPage({ user, onUserUpdate, onLogout, summary }) {
         <div className="ls-settings-head">
           <h2>Delete account</h2>
           <p>
-            This permanently removes your profile, enrollments and progress. For
-            your safety we email a confirmation link before anything is deleted.
+            Send us a request and we will permanently remove your profile,
+            enrollments and course progress, then email you to confirm. Your
+            account stays active until then.
           </p>
         </div>
 
@@ -218,16 +220,30 @@ export default function AccountPage({ user, onUserUpdate, onLogout, summary }) {
           {deleteStage === 'confirm' && (
             <div className="ls-danger-confirm">
               <p>
-                We will email <strong>{user.email}</strong> a link that expires in
-                30 minutes. Your account stays active until you click it.
+                We will send a deletion request for <strong>{user.email}</strong> to
+                our support team. You will get a confirmation email once your data
+                has been removed.
               </p>
+
+              <label className="ls-field">
+                <span>Reason (optional)</span>
+                <textarea
+                  className="ls-input ls-textarea"
+                  value={deleteReason}
+                  onChange={(event) => setDeleteReason(event.target.value)}
+                  placeholder="Anything you would like us to know before you go"
+                  maxLength={500}
+                  rows={3}
+                />
+              </label>
+
               <div className="ls-settings-actions">
                 <button
                   className="ls-button ls-button-danger"
                   onClick={requestDeletion}
                   disabled={deleting}
                 >
-                  {deleting ? 'Sending…' : 'Email me the link'}
+                  {deleting ? 'Sending…' : 'Send deletion request'}
                 </button>
                 <button
                   className="ls-button ls-button-outline"

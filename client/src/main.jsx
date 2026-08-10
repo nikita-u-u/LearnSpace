@@ -43,32 +43,6 @@ function App() {
     };
   }, []);
 
-  /**
-   * The account-deletion email links back to the app with ?deleteAccount=<token>.
-   * Confirming does not require a session, since the user may open the link in
-   * a different browser.
-   */
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('deleteAccount');
-    if (!token) return;
-
-    // Strip the token from the URL so it is not left in history or a screenshot.
-    window.history.replaceState({}, '', window.location.pathname);
-
-    api
-      .confirmDeletion(token)
-      .then((data) => {
-        setUser(null);
-        setEnrollments(new Set());
-        setToken(null);
-        setNotice({ kind: 'success', text: data.message });
-      })
-      .catch((err) => {
-        setNotice({ kind: 'error', text: err.message });
-      });
-  }, []);
-
   const refreshEnrollments = useCallback(async () => {
     try {
       const data = await api.enrollments();

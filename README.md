@@ -145,7 +145,7 @@ confirm endpoint share one idempotent upsert, so duplicate delivery is harmless.
 | Price tampering | The client sends only a `courseId`; amounts come from the database |
 | Webhooks | Rejected unless the Stripe signature verifies against `STRIPE_WEBHOOK_SECRET` |
 | Search input | Regex metacharacters escaped before reaching a `$regex` query |
-| Account deletion | Two-step, confirmed by an emailed one-time token stored only as a SHA-256 hash, 30-minute TTL |
+| Account deletion | Requested in-app, recorded in the database and emailed to the site owner, then actioned manually. Rate limited to one open request per user per day |
 | Email address | Immutable at the schema level and rejected by the profile route |
 | Secrets | Server-only variables never reach the client bundle; only `VITE_*` values are inlined |
 

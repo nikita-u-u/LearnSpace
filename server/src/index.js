@@ -17,12 +17,13 @@ import { Course } from './models/Course.js';
 import { Lesson } from './models/Lesson.js';
 import { Enrollment } from './models/Enrollment.js';
 import { Progress } from './models/Progress.js';
+import { DeletionRequest } from './models/DeletionRequest.js';
 import {
-  DeletionRequest,
-  createDeletionToken,
-  hashToken,
-} from './models/DeletionRequest.js';
-import { sendMail, deletionEmail, isMailConfigured } from './lib/mailer.js';
+  sendMail,
+  deletionRequestEmail,
+  isMailConfigured,
+  adminEmail,
+} from './lib/mailer.js';
 
 // Payments & auth
 import {
@@ -554,92 +555,73 @@ app.post('/api/account/avatar/shuffle', requireAuth, async (req, res) => {
 });
 
 /**
- * Step 1 of deletion: email a one-time confirmation link.
- * The token is never returned in the response, so inbox access is required.
+ * Account deletion request.
+ *
+ * The request is emailed to the site owner and actioned manually, rather than
+ * the user deleting their own account with a confirmation link. The request is
+ * also written to the database so it is not lost if email delivery fails.
  */
 app.post('/api/account/deletion-request', requireAuth, async (req, res) => {
   try {
-    const expiresMinutes = 30;
-    const { token, tokenHash } = createDeletionToken();
+    const reason = String(req.body.reason || '').trim().slice(0, 500);
 
-    // Supersede any earlier pending request for this user.
-    await DeletionRequest.deleteMany({ userId: req.auth.userId, usedAt: null });
-
-    await DeletionRequest.create({
+    // Rate limit: this endpoint sends the owner an email, so repeated clicks
+    // must not become an inbox flood.
+    const recent = await DeletionRequest.findOne({
       userId: req.auth.userId,
-      email: req.user.email,
-      tokenHash,
-      expiresAt: new Date(Date.now() + expiresMinutes * 60 * 1000),
+      status: 'pending',
+      createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
     });
 
-    const appUrl = process.env.PUBLIC_APP_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-    const confirmUrl = `${appUrl.replace(/\/$/, '')}/?deleteAccount=${token}`;
-
-    const mail = deletionEmail({
-      name: req.user.name,
-      confirmUrl,
-      expiresMinutes,
-    });
-
-    const result = await sendMail({ to: req.user.email, ...mail });
-
-    res.json({
-      message: `We sent a confirmation link to ${req.user.email}. It expires in ${expiresMinutes} minutes.`,
-      emailDelivered: result.delivered,
-      // Signals to the UI that the server could not actually send mail, so the
-      // developer knows to check the server console. Never includes the token.
-      emailConfigured: isMailConfigured(),
-    });
-  } catch (error) {
-    console.error('Deletion request error:', error);
-    res.status(500).json({ message: 'Could not start account deletion' });
-  }
-});
-
-/**
- * Step 2 of deletion. Deliberately does NOT require the access token: the user
- * may click the link in another browser. The one-time emailed token is the
- * proof of intent.
- */
-app.post('/api/account/deletion-confirm', async (req, res) => {
-  try {
-    const token = String(req.body.token || '');
-    if (!token) return res.status(400).json({ message: 'Confirmation token is required' });
-
-    const request = await DeletionRequest.findOne({
-      tokenHash: hashToken(token),
-      usedAt: null,
-      expiresAt: { $gt: new Date() },
-    });
-
-    if (!request) {
-      return res.status(400).json({
-        message: 'This confirmation link is invalid or has expired.',
-        code: 'bad_token',
+    if (recent) {
+      return res.status(429).json({
+        message:
+          'You already have a deletion request pending. We will email you once it is processed.',
+        code: 'already_requested',
       });
     }
 
-    const userId = request.userId;
+    const enrollments = await Enrollment.countDocuments({ userId: req.auth.userId });
 
-    // Remove personal data. Enrollment rows are kept but detached from the
-    // user is not possible with a required userId, so they are removed too;
-    // Stripe retains the payment record for tax purposes independently.
-    await Promise.all([
-      Progress.deleteMany({ userId }),
-      Enrollment.deleteMany({ userId }),
-    ]);
-    await User.findByIdAndDelete(userId);
+    const record = await DeletionRequest.create({
+      userId: req.auth.userId,
+      email: req.user.email,
+      name: req.user.name,
+      reason: reason || undefined,
+      status: 'pending',
+    });
 
-    request.usedAt = new Date();
-    await request.save();
-    await DeletionRequest.deleteMany({ userId });
+    const mail = deletionRequestEmail({
+      name: req.user.name,
+      email: req.user.email,
+      userId: req.auth.userId.toString(),
+      enrollments,
+      reason,
+      requestedAt: record.createdAt.toISOString(),
+    });
 
-    console.log(`🗑️  Account deleted: ${request.email}`);
+    const result = await sendMail({
+      to: adminEmail(),
+      replyTo: req.user.email,
+      ...mail,
+    });
 
-    res.json({ message: 'Your account and learning data have been deleted.' });
+    if (result.delivered) {
+      record.notified = true;
+      await record.save();
+    }
+
+    res.status(201).json({
+      message:
+        'Your deletion request has been sent. We will remove your account and ' +
+        'email you to confirm, usually within a few business days.',
+      // Lets the UI warn that mail is not configured on this server.
+      emailConfigured: isMailConfigured(),
+      emailDelivered: result.delivered,
+    });
   } catch (error) {
-    console.error('Deletion confirm error:', error);
-    res.status(500).json({ message: 'Could not delete the account' });
+    console.error('Deletion request error:', error);
+    res.status(500).json({ message: 'Could not submit your deletion request' });
   }
 });
 
