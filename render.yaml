@@ -1,6 +1,7 @@
 services:
   - type: web
-    name: learnspace-api
+    # Must match the existing Render service, otherwise a duplicate is created.
+    name: learnspace-api-oyiv
     runtime: node
     plan: free
     region: singapore

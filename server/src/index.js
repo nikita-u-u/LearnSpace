@@ -954,6 +954,21 @@ app.get('/api/lessons/:lessonId/playback', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * Unknown API routes must return JSON, not the SPA shell.
+ *
+ * Registered before the static/catch-all block below. Without this, a typo or a
+ * route that only exists in a newer build falls through to `app.get('*')` and
+ * responds with index.html and a 200, so the client tries to JSON.parse HTML
+ * and reports a confusing error instead of a plain 404.
+ */
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    message: `No such API route: ${req.method} /api${req.path}`,
+    code: 'route_not_found',
+  });
+});
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.resolve(here, '../../client/dist');
 if (process.env.NODE_ENV === 'production') {
