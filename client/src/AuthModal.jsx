@@ -51,7 +51,8 @@ export default function AuthModal({
         {/* Left rail: brand and value props. Hidden on small screens. */}
         <aside className="ls-auth-aside">
           <div className="ls-brand ls-auth-brand">
-            <span aria-hidden="true">L</span> LearnSpace
+            <img className="ls-brand-mark" src="/favicon-48.png" alt="" width="30" height="30" />
+            <span className="ls-brand-name">LearnSpace</span>
           </div>
 
           <h3>Practical courses, no filler.</h3>

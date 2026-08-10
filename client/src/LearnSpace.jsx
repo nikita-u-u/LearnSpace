@@ -307,7 +307,7 @@ export default function LearnSpace({
 
       <header className="ls-topbar">
         <button className="ls-brand ls-brand-button" onClick={() => openPage("catalog")} aria-label="LearnSpace home">
-          <span aria-hidden="true">L</span>
+          <img className="ls-brand-mark" src="/favicon-48.png" alt="" width="30" height="30" />
           <span className="ls-brand-name">LearnSpace</span>
         </button>
 
@@ -696,7 +696,8 @@ export default function LearnSpace({
       <footer className="ls-footer">
         <div className="ls-footer-content">
           <button className="ls-brand ls-brand-button" onClick={() => openPage("catalog")}>
-            <span>L</span> LearnSpace
+            <img className="ls-brand-mark" src="/favicon-48.png" alt="" width="30" height="30" />
+            <span className="ls-brand-name">LearnSpace</span>
           </button>
           <p>Learn something useful today.</p>
           <div className="ls-footer-links">

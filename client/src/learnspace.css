@@ -22,6 +22,17 @@
     "Segoe UI",
     sans-serif;
 }
+/* Border-box everywhere.
+   Without this, `width: 100%` plus padding and border makes an element wider
+   than its container. `.ls-input` was overflowing its panel by 40px, which
+   pushed the email field past the dialog edge and produced a horizontal
+   scrollbar. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 .ls-app {
   min-height: 100vh;
   background: var(--ls-bg);
@@ -56,32 +67,22 @@
   font-weight: 800;
   letter-spacing: -0.03em;
 }
-/* Only the FIRST span is the logo tile. This used to be `.ls-brand span`,
-   which also turned the "LearnSpace" wordmark into a 30px blue box and
-   clipped it to "Lear". */
-.ls-brand > span:first-child {
+/* The real favicon artwork, not a letter tile. No background colour: the icon
+   carries its own, and a blue plate behind it clashed with the coral mark. */
+.ls-brand-mark {
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-  border-radius: 9px;
-  background: var(--ls-blue);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font-weight: 900;
-  font-size: 15px;
-  line-height: 1;
+  border-radius: 8px;
+  object-fit: contain;
+  display: block;
 }
-/* The wordmark is plain text, never a tile. */
+/* The wordmark is plain text. */
 .ls-brand .ls-brand-name {
-  width: auto;
-  height: auto;
-  background: none;
-  border-radius: 0;
-  color: inherit;
-  display: inline;
   font-weight: 800;
   font-size: inherit;
+  color: inherit;
+  white-space: nowrap;
 }
 .ls-brand-button {
   border: 0;
@@ -953,14 +954,17 @@
   margin-top: 28px;
 }
 .ls-input {
-  border: 2px solid var(--ls-line);
+  border: 1.5px solid var(--ls-line);
   background: var(--ls-soft);
-  border-radius: 12px;
-  padding: 15px 18px;
-  font-size: 15px;
+  border-radius: 10px;
+  /* Tightened from 15px/18px: the fields read as oversized next to the
+     surrounding type scale. */
+  padding: 12px 14px;
+  font-size: 14.5px;
   width: 100%;
   color: var(--ls-ink);
-  transition: all 0.3s var(--ls-ease);
+  transition: border-color 0.24s var(--ls-ease), background-color 0.24s,
+    box-shadow 0.24s var(--ls-ease);
   font-weight: 500;
 }
 .ls-input::placeholder {
@@ -971,8 +975,9 @@
   outline: none;
   border-color: var(--ls-blue);
   background: var(--ls-surface);
-  box-shadow: 0 0 0 4px var(--ls-blue-soft), 0 8px 16px rgba(0, 0, 0, 0.04);
-  transform: translateY(-2px);
+  /* Ring tightened from 4px to 3px, and the lift removed. A field that moves
+     when you click into it reads as instability, not polish. */
+  box-shadow: 0 0 0 3px var(--ls-blue-soft);
 }
 .ls-input:hover:not(:focus) {
   border-color: oklch(80% 0.04 250);
@@ -2045,8 +2050,10 @@ html {
 
 .ls-auth-dialog {
   display: grid;
-  grid-template-columns: 0.85fr 1fr;
-  width: min(880px, 100%);
+  /* Fixed left rail rather than fr: an fr track can be forced wider by its
+     content's min-content size, which pushes the dialog past the viewport. */
+  grid-template-columns: 300px minmax(0, 1fr);
+  width: min(820px, 100%);
   max-height: calc(100dvh - 48px);
   background: var(--ls-surface);
   border: 1px solid var(--ls-line);
@@ -2080,10 +2087,13 @@ html {
 .ls-auth-brand {
   color: #fff;
   font-size: 16px;
+  position: relative;
+  z-index: 1;
 }
-.ls-auth-brand span {
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(4px);
+/* Light plate so the coral mark stays legible on the dark rail. */
+.ls-auth-brand .ls-brand-mark {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 3px;
 }
 .ls-auth-aside h3 {
   margin: 0;
