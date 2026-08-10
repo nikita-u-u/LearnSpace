@@ -225,29 +225,3 @@ Then set the printed `whsec_` value as `STRIPE_WEBHOOK_SECRET`. Without it, the
 webhook route rejects requests rather than trusting an unsigned payload, and
 purchases complete through the verified confirm endpoint instead.
 
-## Deployment
-
-**Vercel (client).** Root Directory must be the repository root so `vercel.json` is
-read; it supplies the build command, output directory and the `/api` rewrite. Set
-`VITE_STRIPE_PUBLISHABLE_KEY` in project settings.
-
-**Render (API).** Defined by `render.yaml`. Installs from the repository root so npm
-workspaces resolve, health-checks `/api/health`. Set every variable marked
-`sync: false` in the dashboard.
-
-Point the Stripe webhook endpoint at the Render URL directly rather than through the
-Vercel rewrite:
-
-```text
-https://learnspace-api-oyiv.onrender.com/api/webhooks/stripe
-```
-
-## Current limitations
-
-- Each seeded course has a single lesson, so progress is either 0% or 100% until
-  courses carry multiple lessons.
-- Course ratings come from the seed script and are synthetic; there is no review
-  system yet.
-- Access tokens last 7 days with no refresh rotation. Shortening the lifetime
-  requires implementing refresh tokens first.
-- The admin role exists on the user model but no admin-only interface is built.
