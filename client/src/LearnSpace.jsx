@@ -1166,7 +1166,7 @@ function LessonPlayer({ course, lesson, locked, playback, onPlay, onEnroll }) {
   if (playback.status === "ready") {
     return (
       <div className="ls-player">
-        <iframe src={playback.url} title={lesson.title} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen />
+        <iframe src={playback.url} title={lesson.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowFullScreen />
       </div>
     );
   }
