@@ -13,5 +13,15 @@ export default defineConfig({
     port: 5173,
     proxy: { '/api': 'http://localhost:4000' }
   },
-  build: { outDir: 'dist' }
+  build: {
+    // Output to a top-level `dist` at the repository root.
+    //
+    // Vercel looks for an output directory named `dist` and kept failing with
+    // "No Output Directory named dist found" when the build wrote to
+    // client/dist. Emitting to the repo root makes the location match what
+    // Vercel expects by default, so the deploy no longer depends on getting
+    // the Root Directory and Output Directory settings to agree.
+    outDir: fileURLToPath(new URL('../dist', import.meta.url)),
+    emptyOutDir: true
+  }
 });

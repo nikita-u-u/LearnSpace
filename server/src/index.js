@@ -962,7 +962,8 @@ app.use('/api', (req, res) => {
  * 500 from sendFile.
  */
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dist = path.resolve(here, '../../client/dist');
+// Vite emits to a top-level `dist` at the repository root. See client/vite.config.js.
+const dist = path.resolve(here, '../../dist');
 const hasClientBuild = fs.existsSync(path.join(dist, 'index.html'));
 
 if (hasClientBuild) {

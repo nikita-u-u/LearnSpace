@@ -1,7 +1,11 @@
 node_modules
 .env
 .env.local
+
+# Vite build output (repo root, see client/vite.config.js)
+dist
 client/dist
+
 .DS_Store
 
 # Internal operations document, not part of the codebase
