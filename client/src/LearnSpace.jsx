@@ -34,6 +34,7 @@ export default function LearnSpace({
   onPlayLesson,
   onUserUpdate,
   onNotice,
+  checkoutSlot = null,
 }) {
   const [view, setView] = useState("catalog");
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -295,6 +296,9 @@ export default function LearnSpace({
 
   return (
     <div className="ls-app">
+      {/* Rendered here, inside .ls-app, so the scoped control styles apply. */}
+      {checkoutSlot}
+
       {isAuthModalOpen && (
         <AuthModal
           onClose={() => setIsAuthModalOpen(false)}

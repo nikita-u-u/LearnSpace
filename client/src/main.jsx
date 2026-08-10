@@ -124,15 +124,22 @@ function App() {
         onPlayLesson={handlePlayLesson}
         onUserUpdate={(next) => setUser(next)}
         onNotice={setNotice}
+        /**
+         * Passed as a slot so it renders INSIDE the .ls-app wrapper.
+         * Button and control styles are scoped to `.ls-app ...` to win against
+         * the base reset, so a modal rendered as a sibling of <LearnSpace>
+         * received none of them and appeared completely unstyled.
+         */
+        checkoutSlot={
+          checkoutCourse ? (
+            <CheckoutModal
+              course={checkoutCourse}
+              onClose={() => setCheckoutCourse(null)}
+              onSuccess={handlePaymentSuccess}
+            />
+          ) : null
+        }
       />
-
-      {checkoutCourse && (
-        <CheckoutModal
-          course={checkoutCourse}
-          onClose={() => setCheckoutCourse(null)}
-          onSuccess={handlePaymentSuccess}
-        />
-      )}
     </>
   );
 }

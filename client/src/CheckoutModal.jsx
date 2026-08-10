@@ -140,6 +140,28 @@ function PaymentForm({ intent, courseId, onSuccess, onCancel }) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [ready, setReady] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  /**
+   * If the Payment Element never mounts, the Pay button stays disabled with no
+   * explanation. The most common cause is the publishable key belonging to a
+   * different Stripe account than the secret key that created the
+   * PaymentIntent, so say so rather than leaving a dead button.
+   */
+  useEffect(() => {
+    if (ready || loadFailed) return;
+    const timer = setTimeout(() => {
+      if (!ready) {
+        setLoadFailed(true);
+        setMessage(
+          'The payment form could not load. This usually means the Stripe ' +
+          'publishable key belongs to a different account than the secret key ' +
+          'used to create the payment. Check both keys are from the same Stripe account.',
+        );
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [ready, loadFailed]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -196,8 +218,19 @@ function PaymentForm({ intent, courseId, onSuccess, onCancel }) {
     <form className="ls-checkout-form" onSubmit={handleSubmit}>
       <PaymentElement
         onReady={() => setReady(true)}
+        onLoadError={({ error }) => {
+          setLoadFailed(true);
+          setMessage(error?.message || 'The payment form failed to load.');
+        }}
         options={{ layout: 'tabs' }}
       />
+
+      {!ready && !loadFailed && (
+        <div className="ls-checkout-loading">
+          <span className="ls-inline-spinner" />
+          Loading secure payment form…
+        </div>
+      )}
 
       {message && <div className="ls-alert">{message}</div>}
 
