@@ -5,7 +5,7 @@
   "workspaces": ["client", "server"],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace client\" \"npm run dev --workspace server\"",
-    "build": "npm run build --workspace client",
+    "build": "npm run build --workspace client && node scripts/mirror-dist.mjs",
     "start": "npm run start --workspace server",
     "seed": "npm run seed --workspace server",
     "migrate": "npm run migrate --workspace server"
