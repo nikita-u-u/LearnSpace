@@ -20,8 +20,14 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 const result = dotenv.config({ path: path.resolve(here, '../../../.env') });
 
-if (result.error) {
-  console.warn(`⚠️  Could not read .env (${result.error.code}). Falling back to process env.`);
+// A missing .env is normal in production: Render and Vercel inject real
+// environment variables, and no file is deployed. Only mention it in
+// development, where its absence usually does mean something is wrong.
+if (result.error && process.env.NODE_ENV !== 'production') {
+  console.warn(
+    `⚠️  No .env file found (${result.error.code}). Using process environment. ` +
+    'Copy .env.example to .env for local development.',
+  );
 }
 
 /** Fails fast in production rather than silently using an insecure default. */
