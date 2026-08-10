@@ -14,12 +14,11 @@ export default defineConfig({
     proxy: { '/api': 'http://localhost:4000' }
   },
   build: {
-    // Emits to client/dist.
+    // Emits to client/dist, Vite's natural location.
     //
-    // Vercel is configured for BOTH possible Root Directory settings so the
-    // deploy cannot break on that one dashboard field:
-    //   Root Directory = repo root -> /vercel.json       (outputDirectory: client/dist)
-    //   Root Directory = client    -> /client/vercel.json (outputDirectory: dist)
+    // The root build script then mirrors it to <repo>/dist via
+    // scripts/mirror-dist.mjs, so Vercel finds the output whether its Root
+    // Directory is the repo root or "client". See that script for detail.
     outDir: 'dist',
     emptyOutDir: true
   }

@@ -1,11 +1,33 @@
 const TOKEN_KEY = 'learnspace.token';
 
+/** Production API host, used when the app is not served from localhost. */
+const PRODUCTION_API = 'https://learnspace-api-oyiv.onrender.com';
+
 /**
- * Empty by default, which keeps requests same-origin and works both locally
- * (Vite proxy) and on Vercel (rewrite to the Render API, see vercel.json).
- * Set VITE_API_URL to call the Render service directly instead.
+ * Where API requests go.
+ *
+ * 1. VITE_API_URL wins if set, so any environment can be pointed anywhere.
+ * 2. On localhost we stay relative and let the Vite dev proxy handle it.
+ * 3. Anywhere else we call the Render API directly.
+ *
+ * Step 3 exists because relying on a same-origin `/api` rewrite made the app
+ * depend on Vercel's Root Directory setting being correct: when it was not,
+ * vercel.json was ignored, every /api call 404'd, and the catalogue rendered
+ * empty. Addressing the API directly removes that dependency. CORS is handled
+ * by the CLIENT_ORIGIN allowlist on the server.
  */
-const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+function resolveApiBase() {
+  const configured = (import.meta.env.VITE_API_URL || '').trim();
+  if (configured) return configured.replace(/\/$/, '');
+
+  const host = typeof window === 'undefined' ? '' : window.location.hostname;
+  const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+  if (isLocal) return '';
+
+  return PRODUCTION_API;
+}
+
+const API_BASE = resolveApiBase();
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);

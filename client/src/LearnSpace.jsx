@@ -115,7 +115,9 @@ export default function LearnSpace({
       } catch (err) {
         if (err.name === "AbortError" || !active) return;
         console.error(err);
-        setLoadError("We could not load courses. Check your connection and try again.");
+        // Surface the real reason: "check your connection" sent me chasing a
+        // network problem when the actual cause was a 404 from a misrouted API.
+        setLoadError(`We could not load courses. ${err.message}`);
         setCourses([]);
         setTotalCount(0);
       } finally {
