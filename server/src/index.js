@@ -2,6 +2,7 @@
 // See lib/env.js for why this cannot be a dotenv.config() call in this file.
 import './lib/env.js';
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
@@ -969,11 +970,31 @@ app.use('/api', (req, res) => {
   });
 });
 
+/**
+ * Optionally serve the built client.
+ *
+ * On Render this service is API-only: the frontend is hosted on Vercel, and
+ * `NODE_ENV=production` makes npm skip devDependencies, so Vite is not even
+ * installed there. Gate on the build actually existing rather than on
+ * NODE_ENV, so a missing client/dist cannot turn every non-API request into a
+ * 500 from sendFile.
+ */
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.resolve(here, '../../client/dist');
-if (process.env.NODE_ENV === 'production') {
+const hasClientBuild = fs.existsSync(path.join(dist, 'index.html'));
+
+if (hasClientBuild) {
   app.use(express.static(dist));
   app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+} else {
+  // Pure API mode. Make that explicit instead of failing obscurely.
+  app.get('/', (_req, res) =>
+    res.json({
+      service: 'learnspace-api',
+      message: 'API only. The web app is hosted separately.',
+      health: '/api/health',
+    }),
+  );
 }
 
 app.listen(port, '0.0.0.0', () => {

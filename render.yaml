@@ -7,8 +7,15 @@ services:
     runtime: node
     plan: free
     region: singapore
-    # Root package.json declares npm workspaces, so install from the repo root.
-    buildCommand: npm install
+    # API only. Do NOT build the client here.
+    #
+    # NODE_ENV=production makes npm skip devDependencies, so Vite is not
+    # installed on this service and `vite build` fails with "vite: not found".
+    # The frontend is built and hosted by Vercel instead.
+    #
+    # --omit=dev is explicit rather than relying on NODE_ENV, and the server's
+    # runtime packages are all listed under "dependencies".
+    buildCommand: npm install --omit=dev
     startCommand: npm run start --workspace server
     healthCheckPath: /api/health
     autoDeploy: true
