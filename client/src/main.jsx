@@ -52,6 +52,33 @@ function App() {
     }
   }, []);
 
+  // Handle Stripe redirect returns (e.g. 3D Secure, UPI)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const paymentIntent = params.get('payment_intent');
+    const redirectStatus = params.get('redirect_status');
+
+    if (paymentIntent && redirectStatus === 'succeeded') {
+      api.confirmPayment(paymentIntent)
+        .then(() => {
+          setNotice({ kind: 'success', text: 'Payment confirmed. Your course is unlocked.' });
+          refreshEnrollments();
+        })
+        .catch(() => {
+          setNotice({ kind: 'error', text: 'Payment succeeded but access is syncing. Please refresh.' });
+        })
+        .finally(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('payment_intent');
+          url.searchParams.delete('payment_intent_client_secret');
+          url.searchParams.delete('redirect_status');
+          url.searchParams.delete('checkout');
+          window.history.replaceState({}, '', url.toString());
+        });
+    }
+  }, [refreshEnrollments]);
+
   async function handleAuth(kind, credentials) {
     setIsAuthLoading(true);
     setAuthError('');

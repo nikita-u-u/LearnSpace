@@ -176,7 +176,11 @@ function PaymentForm({ intent, courseId, onSuccess, onCancel }) {
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/?checkout=return`,
+        return_url: (() => {
+          const u = new URL(window.location.href);
+          u.searchParams.set('checkout', 'return');
+          return u.toString();
+        })(),
       },
       redirect: 'if_required',
     });
