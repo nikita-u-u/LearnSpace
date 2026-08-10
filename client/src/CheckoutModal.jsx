@@ -74,7 +74,7 @@ export default function CheckoutModal({ course, onClose, onSuccess }) {
   }, [course.id]);
 
   const options = useMemo(
-    () => (intent ? { clientSecret: intent.clientSecret, appearance } : null),
+    () => (intent ? { clientSecret: intent.clientSecret, appearance, developerTools: { assistant: { enabled: false } } } : null),
     [intent],
   );
 
