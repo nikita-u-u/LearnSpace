@@ -329,7 +329,7 @@ export default function LearnSpace({
           onClick={() => setIsMobileSearchOpen(true)}
           aria-label="Search courses"
         >
-          <span aria-hidden="true">âŒ•</span>
+          <span aria-hidden="true">⌕</span>
         </button>
 
         <div className="ls-account" ref={accountMenuRef}>
@@ -346,7 +346,7 @@ export default function LearnSpace({
                   <strong>{user.name}</strong>
                   <small>{user.role}</small>
                 </span>
-                <span className="ls-caret" aria-hidden="true">â–¾</span>
+                <span className="ls-caret" aria-hidden="true">▾</span>
               </button>
 
               {isAccountMenuOpen && (
@@ -363,13 +363,13 @@ export default function LearnSpace({
                     role="menuitem"
                     onClick={() => { setIsAccountMenuOpen(false); openPage("learning"); }}
                   >
-                    <span aria-hidden="true">â—‰</span> My courses
+                    <span aria-hidden="true">◉</span> My courses
                   </button>
                   <button
                     role="menuitem"
                     onClick={() => { setIsAccountMenuOpen(false); openPage("account"); }}
                   >
-                    <span aria-hidden="true">âš™</span> Account settings
+                    <span aria-hidden="true">⚙</span> Account settings
                   </button>
                   <hr />
                   <button
@@ -377,7 +377,7 @@ export default function LearnSpace({
                     className="is-danger"
                     onClick={() => { setIsAccountMenuOpen(false); onLogout?.(); }}
                   >
-                    <span aria-hidden="true">âŽ</span> Sign out
+                    <span aria-hidden="true">⏎</span> Sign out
                   </button>
                 </div>
               )}
@@ -386,7 +386,7 @@ export default function LearnSpace({
             <span className="ls-inline-spinner" aria-label="Restoring session" />
           ) : (
             <button className="ls-button ls-button-blue ls-signin" onClick={() => setIsAuthModalOpen(true)}>
-              <span className="ls-signin-icon" aria-hidden="true">â†’]</span>
+              <span className="ls-signin-icon" aria-hidden="true">→]</span>
               <span className="ls-signin-label">Sign in</span>
             </button>
           )}
@@ -411,9 +411,9 @@ export default function LearnSpace({
 
       {notice && (
         <div className={`ls-toast ${notice.kind === "error" ? "is-error" : "is-success"}`} role="status">
-          <span aria-hidden="true">{notice.kind === "error" ? "âš " : "âœ“"}</span>
+          <span aria-hidden="true">{notice.kind === "error" ? "⚠" : "✓"}</span>
           <p>{notice.text}</p>
-          <button onClick={onDismissNotice} aria-label="Dismiss message">âœ•</button>
+          <button onClick={onDismissNotice} aria-label="Dismiss message">✕</button>
         </div>
       )}
 
@@ -447,7 +447,7 @@ export default function LearnSpace({
               <label>Level <select value={level} onChange={(e) => setLevel(e.target.value)}><option value="all">All</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></label>
               <label>Sort <select value={sort} onChange={(e) => setSort(e.target.value)}><option value="recommended">Recommended order</option><option value="new">Recently added</option><option value="low">Price low</option><option value="high">Price high</option></select></label>
               <span className="ls-count">
-                {loading ? "Loadingâ€¦" : `${courses.length} of ${totalCount} courses`}
+                {loading ? "Loading…" : `${courses.length} of ${totalCount} courses`}
               </span>
             </div>
 
@@ -460,7 +460,7 @@ export default function LearnSpace({
                 <div className="ls-results-head">
                   <div className="ls-section-label">
                     {debouncedQuery
-                      ? `Results for â€œ${debouncedQuery}â€`
+                      ? `Results for “${debouncedQuery}”`
                       : category === "All"
                         ? "All courses"
                         : category}
@@ -501,7 +501,7 @@ export default function LearnSpace({
         {view === "lesson" && currentCourse && (
           <section className="ls-shell ls-view">
             <button className="ls-back" onClick={() => setView("catalog")}>
-              <span aria-hidden="true">â†</span> Back to courses
+              <span aria-hidden="true">←</span> Back to courses
             </button>
             <div className="ls-course-layout">
               <div>
@@ -545,7 +545,7 @@ export default function LearnSpace({
                   {currentCourse.price > 0 && <small>One-time payment</small>}
                 </div>
 
-                {isEnrolled && <div className="ls-owned-badge">âœ“ You own this course</div>}
+                {isEnrolled && <div className="ls-owned-badge">✓ You own this course</div>}
 
                 <button
                   className="ls-button ls-button-blue ls-wide"
@@ -670,24 +670,24 @@ export default function LearnSpace({
 
       <nav className="ls-nav ls-nav-mobile" aria-label="Primary navigation">
         <button className={view === "catalog" ? "active" : ""} onClick={() => openPage("catalog")}>
-          <span aria-hidden="true">â–¦</span> Browse
+          <span aria-hidden="true">▦</span> Browse
         </button>
         {user ? (
           <>
             <button className={view === "learning" ? "active" : ""} onClick={() => openPage("learning")}>
-              <span aria-hidden="true">â—‰</span> My courses
+              <span aria-hidden="true">◉</span> My courses
             </button>
             <button className={view === "account" ? "active" : ""} onClick={() => openPage("account")}>
-              <span aria-hidden="true">âš™</span> Account
+              <span aria-hidden="true">⚙</span> Account
             </button>
           </>
         ) : (
           <>
             <button onClick={() => setIsAuthModalOpen(true)}>
-              <span aria-hidden="true">â†’]</span> Sign in
+              <span aria-hidden="true">→]</span> Sign in
             </button>
             <button className={view === "contact" ? "active" : ""} onClick={() => openPage("contact")}>
-              <span aria-hidden="true">âœ‰</span> Contact
+              <span aria-hidden="true">✉</span> Contact
             </button>
           </>
         )}
@@ -814,7 +814,7 @@ function SearchField({ query, onChange, className = "", autoFocus = false }) {
       role="search"
       onSubmit={(event) => event.preventDefault()}
     >
-      <span className="ls-search-icon" aria-hidden="true">âŒ•</span>
+      <span className="ls-search-icon" aria-hidden="true">⌕</span>
       <input
         type="search"
         value={query}
@@ -830,7 +830,7 @@ function SearchField({ query, onChange, className = "", autoFocus = false }) {
           onClick={() => onChange("")}
           aria-label="Clear search"
         >
-          âœ•
+          ✕
         </button>
       )}
     </form>
@@ -1010,14 +1010,14 @@ function ContactPage() {
     >
       <div className="ls-contact-grid">
         <div className="ls-contact-card">
-          <div className="ls-contact-icon" aria-hidden="true">âœ‰</div>
+          <div className="ls-contact-icon" aria-hidden="true">✉</div>
           <h3>Email</h3>
           <p>Best for support, refunds, and privacy requests. We usually reply within two business days.</p>
           <a className="ls-contact-link" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
         </div>
 
         <div className="ls-contact-card">
-          <div className="ls-contact-icon" aria-hidden="true">â—Ž</div>
+          <div className="ls-contact-icon" aria-hidden="true">◎</div>
           <h3>Website</h3>
           <p>The live LearnSpace catalogue. Include the page URL when reporting an issue.</p>
           <a
@@ -1060,7 +1060,7 @@ function CourseCard({ course, onOpen, owned = false }) {
       <h3>{course.title}</h3>
       <p>{course.description}</p>
       <div className="ls-card-meta">
-        <span>â˜… {Number(course.rating || 0).toFixed(1)}</span>
+        <span>★ {Number(course.rating || 0).toFixed(1)}</span>
         <span>{course.teacher}</span>
       </div>
       <div className="ls-card-foot">
@@ -1083,7 +1083,7 @@ function LessonPlayer({ course, lesson, locked, playback, onPlay, onEnroll }) {
       <div className="ls-player">
         <div className="ls-locked">
           <div>
-            <div className="ls-lock" aria-hidden="true">ðŸ”’</div>
+            <div className="ls-lock" aria-hidden="true">🔒</div>
             <h3>Enrollment required</h3>
             <p>
               The video URL is not sent to your browser until the server confirms
@@ -1107,7 +1107,7 @@ function LessonPlayer({ course, lesson, locked, playback, onPlay, onEnroll }) {
   return (
     <div className="ls-player">
       <button className="ls-play" onClick={onPlay} disabled={playback.status === "loading"}>
-        {playback.status === "loading" ? "â€¦" : "â–¶"}
+        {playback.status === "loading" ? "…" : "▶"}
       </button>
       {playback.status === "error" && (
         <p className="ls-play-error">{playback.message || "Playback could not be verified."}</p>
@@ -1136,7 +1136,7 @@ function Pagination({ page, totalPages, onChange }) {
       <div className="ls-page-numbers">
         {pages.map((p, index) =>
           p === "gap" ? (
-            <span className="ls-page-gap" key={`gap-${index}`}>â€¦</span>
+            <span className="ls-page-gap" key={`gap-${index}`}>…</span>
           ) : (
             <button
               key={p}
@@ -1170,7 +1170,7 @@ function EmptyState({ query, onReset }) {
       <h2>No courses found</h2>
       <p>
         {query
-          ? `Nothing matched â€œ${query}â€. Try a shorter or different term.`
+          ? `Nothing matched “${query}”. Try a shorter or different term.`
           : "Nothing matches these filters. Try widening them."}
       </p>
       <button className="ls-button ls-button-outline" onClick={onReset}>Clear search and filters</button>

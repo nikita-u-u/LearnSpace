@@ -56,15 +56,32 @@
   font-weight: 800;
   letter-spacing: -0.03em;
 }
-.ls-brand span {
+/* Only the FIRST span is the logo tile. This used to be `.ls-brand span`,
+   which also turned the "LearnSpace" wordmark into a 30px blue box and
+   clipped it to "Lear". */
+.ls-brand > span:first-child {
   width: 30px;
   height: 30px;
+  flex-shrink: 0;
   border-radius: 9px;
   background: var(--ls-blue);
   color: #fff;
   display: grid;
   place-items: center;
   font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+}
+/* The wordmark is plain text, never a tile. */
+.ls-brand .ls-brand-name {
+  width: auto;
+  height: auto;
+  background: none;
+  border-radius: 0;
+  color: inherit;
+  display: inline;
+  font-weight: 800;
+  font-size: inherit;
 }
 .ls-brand-button {
   border: 0;
