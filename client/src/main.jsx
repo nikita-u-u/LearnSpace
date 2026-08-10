@@ -1,112 +1,165 @@
-import React, { useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import LearnSpace from './LearnSpace';
+import CheckoutModal from './CheckoutModal';
+import { api, setToken, getToken, ApiError } from './lib/api';
 
-// ── Demo catalog generation (same 500-course algorithm as before) ────────────
-const pools = {
-  Development: ['JavaScript','TypeScript','React','Node.js','Python','Go','Rust','Java','Flutter','GraphQL'],
-  Data: ['SQL','Pandas','Statistics','Machine Learning','PyTorch','Data Engineering','A/B Testing','NLP'],
-  Design: ['Figma','Typography','UX Research','Design Systems','Motion Design','Accessibility'],
-  Business: ['Product Management','Strategy','Finance','Leadership','Negotiation','Operations'],
-  Marketing: ['SEO','Copywriting','Email Marketing','Growth','Brand Positioning'],
-  Cloud: ['AWS','Docker','Kubernetes','Terraform','Linux','CI/CD'],
-  Security: ['Web Security','Cryptography','Ethical Hacking','Cloud Security'],
-  Language: ['Spanish','French','German','Japanese','Mandarin'],
-  Creative: ['Photography','Video Editing','Music Production','Writing','Animation'],
-  Growth: ['Productivity','Deep Work','Career Change','Personal Finance','Interviewing'],
-};
-const videoIds = ['PkZNo7MFNFg','W6NZfCO5SIk','hdI2bqOjy3c','kUMe1FH4CHE','rfscVS0vtbw','_uQrJ0TkZlc','8DvywoWv6fI','HXV3zeQKqGY','7S_tz1z_5bA','RBSGKlAvoiM','V_xro1bcAuA','aircAruvnKk','Ilg3gGewQ5U','IHZwWFHWa-w','fNk_zzaMoSs','RGOj5yH7evk','0IAPZzGSbME','bMknfKXIFA8','SqcY0GlETPk','Ke90Tje7VS0'];
-const teachers = ['Ana Petrova','Dmitri Sokolov','Marisol Duarte','Ife Adeyemi','Keiko Tan','Rio Fernandes','Lucía Moreno','Aisha Rahman','Wei Zhang','Elena Vasquez','Kwame Mensah','Mei Chen'];
-const angles = ['from Scratch','The Complete Guide','Practical Workshop','Deep Dive','Patterns and Pitfalls','for Busy People','Build Real Projects','Fundamentals'];
-const lessonTitles = ['The mental model','Core skills','A practical workflow','Common mistakes','Testing the result','Project walkthrough','Going further','Shipping your work','Final challenge'];
-
-let seed = 81;
-const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-
-const cats = Object.keys(pools);
-const COURSES = Array.from({ length: 500 }, (_, i) => {
-  const cat = cats[i % cats.length];
-  const subject = pools[cat][Math.floor(i / cats.length) % pools[cat].length];
-  const title = subject + ' ' + angles[Math.floor(i / 30) % angles.length];
-  const price = i % 3 === 0 ? 0 : [19, 29, 39, 49, 59, 79][i % 6];
-  const lessons = Array.from({ length: 5 + i % 6 }, (_, j) => ({
-    id: `c${i}-l${j}`,
-    title: lessonTitles[j],
-    duration: `${6 + (i + j) % 10}:${String((i * 13 + j * 7) % 60).padStart(2, '0')}`,
-    videoId: videoIds[(i * 3 + j) % videoIds.length],
-  }));
-  return {
-    id: `c${i}`,
-    title,
-    category: cat,
-    teacher: teachers[i % teachers.length],
-    price,
-    level: ['Beginner', 'Intermediate', 'Advanced'][i % 3],
-    rating: (4 + (i % 10) / 10).toFixed(1),
-    students: 350 + (i * 977) % 49000,
-    lessons,
-    description: `A focused ${subject} course built around practical work. Learn the concepts, avoid common traps, and finish with something you can show.`,
-    createdAt: new Date(Date.now() - i * 86400000 * 3).toISOString(),
-  };
-});
-
-const DEMO_USERS = {
-  student: { email: 'priya@learnspace.dev', password: 'letmein123', name: 'Priya Raman', role: 'Student', enrollments: ['c3', 'c19', 'c42'] },
-  admin: { email: 'rio@learnspace.dev', password: 'letmein123', name: 'Rio Fernandes', role: 'Admin', enrollments: ['c3', 'c19', 'c42'] },
-};
-
-// ── App shell ────────────────────────────────────────────────────────────────
 function App() {
   const [user, setUser] = useState(null);
-  const [enrollments, setEnrollments] = useState(new Set(['c3', 'c19', 'c42']));
-  const [loading] = useState(false);
-  const [error] = useState('');
+  const [enrollments, setEnrollments] = useState(new Set());
+  const [authError, setAuthError] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [restoring, setRestoring] = useState(Boolean(getToken()));
+
+  const [checkoutCourse, setCheckoutCourse] = useState(null);
+  const [notice, setNotice] = useState(null);
 
   const userWithEnrollments = useMemo(
-    () => user ? { ...user, enrollments: [...enrollments] } : null,
+    () => (user ? { ...user, enrollments: [...enrollments] } : null),
     [user, enrollments],
   );
 
-  function handleLogin() {
-    // Demo: auto-login as student. In production, open your auth flow here.
-    setUser(DEMO_USERS.student);
-    setEnrollments(new Set(DEMO_USERS.student.enrollments));
+  // Restore the session on load so a refresh does not sign the user out.
+  useEffect(() => {
+    if (!getToken()) return;
+
+    let active = true;
+    api
+      .me()
+      .then((data) => {
+        if (!active) return;
+        setUser(data.user);
+        setEnrollments(new Set(data.enrollments));
+      })
+      .catch(() => {
+        if (active) setToken(null);
+      })
+      .finally(() => {
+        if (active) setRestoring(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  /**
+   * The account-deletion email links back to the app with ?deleteAccount=<token>.
+   * Confirming does not require a session, since the user may open the link in
+   * a different browser.
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('deleteAccount');
+    if (!token) return;
+
+    // Strip the token from the URL so it is not left in history or a screenshot.
+    window.history.replaceState({}, '', window.location.pathname);
+
+    api
+      .confirmDeletion(token)
+      .then((data) => {
+        setUser(null);
+        setEnrollments(new Set());
+        setToken(null);
+        setNotice({ kind: 'success', text: data.message });
+      })
+      .catch((err) => {
+        setNotice({ kind: 'error', text: err.message });
+      });
+  }, []);
+
+  const refreshEnrollments = useCallback(async () => {
+    try {
+      const data = await api.enrollments();
+      setEnrollments(new Set(data.activeCourseIds));
+    } catch {
+      // Non-fatal: the user keeps whatever access state they already had.
+    }
+  }, []);
+
+  async function handleAuth(kind, credentials) {
+    setIsAuthLoading(true);
+    setAuthError('');
+    try {
+      const data = kind === 'login' ? await api.login(credentials) : await api.register(credentials);
+      setToken(data.token);
+      setUser(data.user);
+      const enrolled = kind === 'login' ? await api.enrollments().catch(() => null) : null;
+      setEnrollments(new Set(enrolled?.activeCourseIds ?? []));
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setIsAuthLoading(false);
+    }
   }
 
   function handleLogout() {
     setUser(null);
+    setEnrollments(new Set());
+    setToken(null);
+    setNotice({ kind: 'success', text: 'You are signed out.' });
   }
 
-  async function handleEnroll(courseId) {
-    // Demo: instant enrollment. In production, call your backend + Stripe here.
-    setEnrollments(prev => new Set([...prev, courseId]));
+  async function handleEnroll(course) {
+    if (!course) return;
+
+    if (course.price > 0) {
+      setCheckoutCourse(course);
+      return;
+    }
+
+    try {
+      await api.enrollFree(course.id);
+      setEnrollments((prev) => new Set([...prev, course.id]));
+      setNotice({ kind: 'success', text: `You are enrolled in ${course.title}.` });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 402) {
+        setCheckoutCourse(course);
+        return;
+      }
+      setNotice({ kind: 'error', text: err.message });
+    }
   }
 
-  async function handlePlayLesson({ courseId, lessonId }) {
-    // Find the lesson's videoId and verify it via YouTube oEmbed before returning
-    const course = COURSES.find(c => c.id === courseId);
-    const lesson = course?.lessons.find(l => l.id === lessonId);
-    if (!lesson) throw new Error('Lesson not found');
+  function handlePaymentSuccess(courseId) {
+    setEnrollments((prev) => new Set([...prev, courseId]));
+    setCheckoutCourse(null);
+    setNotice({ kind: 'success', text: 'Payment confirmed. Your course is unlocked.' });
+    refreshEnrollments();
+  }
 
-    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + lesson.videoId)}&format=json`;
-    const res = await fetch(oembedUrl, { mode: 'cors' });
-    if (!res.ok) throw new Error('Video could not be verified');
-
-    return `https://www.youtube-nocookie.com/embed/${lesson.videoId}?autoplay=1&rel=0`;
+  async function handlePlayLesson(lesson) {
+    const data = await api.playback(lesson.id);
+    return data.embedUrl;
   }
 
   return (
-    <LearnSpace
-      courses={COURSES}
-      user={userWithEnrollments}
-      loading={loading}
-      error={error}
-      onLogin={handleLogin}
-      onLogout={handleLogout}
-      onEnroll={handleEnroll}
-      onPlayLesson={handlePlayLesson}
-      onRetry={() => {}}
-    />
+    <>
+      <LearnSpace
+        user={userWithEnrollments}
+        authError={authError}
+        isAuthLoading={isAuthLoading}
+        restoring={restoring}
+        notice={notice}
+        onDismissNotice={() => setNotice(null)}
+        onLogin={(c) => handleAuth('login', c)}
+        onRegister={(c) => handleAuth('register', c)}
+        onLogout={handleLogout}
+        onEnroll={handleEnroll}
+        onPlayLesson={handlePlayLesson}
+        onUserUpdate={(next) => setUser(next)}
+        onNotice={setNotice}
+      />
+
+      {checkoutCourse && (
+        <CheckoutModal
+          course={checkoutCourse}
+          onClose={() => setCheckoutCourse(null)}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+    </>
   );
 }
 
