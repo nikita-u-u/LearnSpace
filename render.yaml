@@ -1,7 +1,9 @@
 services:
   - type: web
-    # Must match the existing Render service, otherwise a duplicate is created.
-    name: learnspace-api-oyiv
+    # Must match the existing Render service name exactly, otherwise applying
+    # this file creates a second service. The public hostname carries a random
+    # suffix (learnspace-api-oyiv.onrender.com) but the service name does not.
+    name: learnspace-api
     runtime: node
     plan: free
     region: singapore
