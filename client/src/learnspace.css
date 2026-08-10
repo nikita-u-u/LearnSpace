@@ -39,6 +39,7 @@
   color: var(--ls-ink);
   font-size: 15px;
   line-height: 1.55;
+  overflow-x: clip;
 }
 /* NOTE ON SPECIFICITY
    This reset is `.ls-app button` (0-1-1), which outranks any single-class rule
@@ -1773,10 +1774,10 @@ html {
 
   /* Leave room for the tab bar, and for the buy bar when it is present. */
   .ls-main {
-    padding: 24px 0 96px;
+    padding: 24px 0 144px;
   }
   .ls-footer {
-    padding: 44px 20px calc(96px + env(safe-area-inset-bottom));
+    padding: 44px 20px calc(144px + env(safe-area-inset-bottom));
   }
 
   .ls-toast {
@@ -2017,6 +2018,12 @@ html {
   }
   .ls-mobile-buybar strong {
     font-size: 17px;
+  }
+  .ls-modal-panel.ls-checkout {
+    padding: 24px 14px 20px;
+  }
+  .ls-checkout-amount {
+    font-size: 22px;
   }
 }
 
