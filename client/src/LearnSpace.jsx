@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./learnspace.css";
 import { api, formatMoney, formatPrice } from "./lib/api";
 import Avatar from "./Avatar";
@@ -78,8 +78,7 @@ export default function LearnSpace({
   // Real catalogue figures from the API.
   useEffect(() => {
     let active = true;
-    fetch("/api/stats")
-      .then((res) => (res.ok ? res.json() : null))
+    api.stats()
       .then((data) => {
         if (active && data) setStats(data);
       })
@@ -105,9 +104,7 @@ export default function LearnSpace({
         if (sort) params.set("sort", sort);
         if (debouncedQuery) params.set("search", debouncedQuery);
 
-        const res = await fetch(`/api/courses?${params}`, { signal: controller.signal });
-        if (!res.ok) throw new Error("Failed to load courses");
-        const data = await res.json();
+        const data = await api.courses(params, controller.signal);
 
         if (!active) return;
 
