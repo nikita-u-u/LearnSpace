@@ -13,7 +13,9 @@ const hasKey = publishableKey.startsWith('pk_') && !publishableKey.includes('rep
 
 // loadStripe must be called once, outside render, or the SDK re-initialises on
 // every keystroke inside the card form.
-const stripePromise = hasKey ? loadStripe(publishableKey) : null;
+const stripePromise = hasKey ? loadStripe(publishableKey, {
+  developerTools: { assistant: { enabled: false } }
+}) : null;
 
 const appearance = {
   theme: 'stripe',
@@ -74,7 +76,7 @@ export default function CheckoutModal({ course, onClose, onSuccess }) {
   }, [course.id]);
 
   const options = useMemo(
-    () => (intent ? { clientSecret: intent.clientSecret, appearance, developerTools: { assistant: { enabled: false } } } : null),
+    () => (intent ? { clientSecret: intent.clientSecret, appearance } : null),
     [intent],
   );
 
