@@ -3,6 +3,8 @@
 A course platform with short, practical lessons. Free and paid courses, priced in INR,
 with Stripe payments, server-verified access control and per-lesson progress tracking.
 
+> **Note:** This is a college project built using **React**, **Vite**, **Node.js**, **Express**, **MongoDB**, and **Stripe**.
+
 - **Live app:** https://learn-space-coral.vercel.app
 - **API:** https://learnspace-api-oyiv.onrender.com
 - **Health check:** https://learnspace-api-oyiv.onrender.com/api/health
